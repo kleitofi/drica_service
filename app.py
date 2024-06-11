@@ -74,7 +74,7 @@ with st.form(key='agendamento_form'):
     submit_button = st.form_submit_button(label='Inserir')
 
     if submit_button:
-        insert_data(cnpj, sintegra, sped, start_date.strftime('%d/%m/%Y'), end_date.strftime('%d/%m/%Y'), generation_date.strftime('%d/%m/%Y'))
+        insert_data(cnpj, sintegra, sped, start_date, end_date, generation_date)
         st.success('Dados inseridos com sucesso!')
 
 # Filtro para buscar agendamentos
