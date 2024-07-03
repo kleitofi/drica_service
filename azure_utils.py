@@ -1,23 +1,52 @@
-from azure.storage.blob import BlobServiceClient, ContentSettings
-import os
+import pandas as pd
+import json
+from azure.data.tables import TableServiceClient, TableEntity
+from azure.core.credentials import AzureSasCredential
+import pyodbc
 
-def send_file(file_path):
+# Defina as variáveis de configuração
+account_url = 'https://dricastg.table.core.windows.net/'
+sas_token = 'sv=2017-04-17&si=All&sig=YEDfKhQLR%2BcfBfiRFzDwYkl17FRQF3uwBHFToFF8tm0%3D&tn=ClientsDocFiscal'
+table_name = 'ClientsDocFiscal'
+
+# Crie o cliente de serviço de tabela
+credential = AzureSasCredential(sas_token)
+service_client = TableServiceClient(endpoint=account_url, credential=credential)
+
+# Referência à tabela
+table_client = service_client.get_table_client(table_name)
+
+def insert_data_into_table(json_data):
     try:
-        storage_conn_string = "DefaultEndpointsProtocol=https;AccountName=softcomarquivospublicos;AccountKey=Zp/Sx9HRl39mp6CtSFKSaHd75q3Hj2YliJBGSq7omRIsjybeMh8QbSwN6hKR/Y/M9m/ZhbYv91DJM+sH9m5Bkg==;EndpointSuffix=core.windows.net"
-        container_name = "publico"
-        past_name = "DocClients"
-    
-        blob_service_client = BlobServiceClient.from_connection_string(storage_conn_string)
-        container_client = blob_service_client.get_container_client(container_name)
+        entities = json.loads(json_data)
         
-        file_name = os.path.basename(file_path)
-        blob_client = container_client.get_blob_client(f"{past_name}/{file_name}")
-        content_settings = ContentSettings(content_type="application/json")
-        with open(file_path, "rb") as data:
-            blob_client.upload_blob(data, blob_type="BlockBlob", content_settings=content_settings, overwrite=True)
+        for entity in entities:
+            table_entity = TableEntity(
+                PartitionKey=entity['cnpj'],
+                RowKey=entity['guid'],
+                sintegra=entity['sintegra'],
+                start_date=entity['start_date'],
+                end_date=entity['end_date'],
+                generation_date=entity['generation_date'],
+                pending=entity['pending'],
+                blob_path=entity['blob_path']
+            )
+            table_client.create_entity(entity=table_entity)
         
-        print(f"Upload: {file_path}")
-        return True
+        print("Dados inseridos com sucesso.")
     except Exception as ex:
-        print(f"Erro: {ex}")
-        return False
+        print(f"Erro ao inserir dados: {ex}")
+
+# Função para excluir todos os registros
+def delete_all_items():
+    entities = table_client.list_entities()
+    
+    for entity in entities:
+        table_client.delete_entity(partition_key=entity['PartitionKey'], row_key=entity['RowKey'])
+
+def sync_data_azure_table(json_data):
+    # Execute a função de exclusão
+    delete_all_items()
+
+    if json_data:
+        insert_data_into_table(json_data)

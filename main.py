@@ -10,9 +10,7 @@ st.title('Agendamento de Documentos')
 if st.button('Sync Dados'):
     json_result = fetch_data_as_json()
     if json_result:
-        file_path = "clients_config.json"
-        if save_json_to_file(json_result, file_path):
-            send_file(file_path)
+        sync_data_azure_table(json_result)
 
 with st.expander("Inserir Dados", expanded=False):
     with st.form(key='agendamento_form'):

@@ -15,17 +15,11 @@ def get_db_connection():
     return conn
 
 def fetch_data_as_json():
+    # Simulando a função fetch_data_as_json
     conn = get_db_connection()
     query = """
-    SELECT 
-        x.guid,
-        x.cnpj,
-        x.sintegra,
-        x.start_date,
-        x.end_date,
-        x.generation_date,
-        x.blob_path
-    FROM tb_agend_docs AS x
+    SELECT *
+    FROM vw_agend_docs_insigth
     """
     try:
         data = pd.read_sql(query, conn)
@@ -34,6 +28,7 @@ def fetch_data_as_json():
             data[date_column] = pd.to_datetime(data[date_column], errors='coerce').dt.strftime('%Y-%m-%dT%H:%M:%S')
         
         data['sintegra'] = data['sintegra'].astype(bool)
+        data['pending'] = data['pending'].astype(bool)
         
         json_data = data.to_json(orient='records', indent=4)
         return json_data
@@ -56,10 +51,7 @@ def insert_data(cnpj, sintegra, sped, start_date, end_date, generation_date):
 def fetch_data_client(filter_cnpj=None):
     conn = get_db_connection()
     base_query = '''
-SELECT TOP 20 [cnpj]
-      ,[nome]
-      ,[partner_nome]
-      ,[quant_ag]
+SELECT TOP 20 *
 FROM [vw_sl_clients]
     '''
     
@@ -67,7 +59,7 @@ FROM [vw_sl_clients]
     if filter_cnpj:
         filter_query = " WHERE CONCAT([cnpj],[nome]) LIKE ?"
     
-    order = " ORDER BY [quant_ag] DESC"
+    order = " ORDER BY [quant_ag] DESC, [orders_ok] DESC"
     
     query = base_query + filter_query + order
 
@@ -90,6 +82,7 @@ SELECT [cnpj]
       ,[end_date]
       ,[blob_path]
       ,[url_blob_path]
+      ,[strSummaryOrders]
   FROM [dbo].[vw_sl_docs]
   WHERE [cnpj] = ?
   GROUP BY
@@ -103,6 +96,7 @@ SELECT [cnpj]
       ,[end_date]
       ,[blob_path]
       ,[url_blob_path]
+      ,[strSummaryOrders]
     '''    
     data = pd.read_sql(query, conn, params=[cnpj])
     conn.close()    

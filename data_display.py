@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_antd_components as sac
 import webbrowser
 from urllib.parse import urlparse
 from db_utils import *
@@ -34,10 +35,18 @@ def generate_dynamic_table(data):
     )
 
     for i, row in data.iterrows():
-        cols = st.columns([7, 1, 1])
-        cols[0].write(f"{row['cnpj']}-{row['nome']}")
-        cols[1].write('Qtd: ' + str(row["quant_ag"]))
-        if cols[2].button("Ação", key=f"button_{i}"):
+        drica = row["drica"]
+        emoji_bot = "🤖" if drica else "📜"
+        
+        quant_ag = row["quant_ag"]
+        orders_ok = row["orders_ok"]
+        stat = f'({quant_ag} - {orders_ok})'
+        
+        emoji_stat = "⬜" if quant_ag == 0 else "✅" if quant_ag == orders_ok else "🟧" 
+        cols = st.columns([7, 2, 1])
+        cols[0].write(f"{row['cnpj']}{emoji_bot}{row['nome']}")
+        cols[1].write(f'Stat: {stat} {emoji_stat}')
+        if cols[2].button("...", key=f"button_{i}"):
             st.session_state.selected_cnpj = row['cnpj']
             detailed_data = fetch_data_detail(row['cnpj'])
             st.session_state.detailed_data = detailed_data
@@ -68,7 +77,8 @@ def generate_detailed_view(data):
     
     for i, row in data.iterrows():
         formatted_generation_date = format_date(row['generation_date'])
-        expander_label = f"Detalhes do Cliente (Geração: {formatted_generation_date})"
+        emoji = "✅" if row['strSummaryOrders'] else "⚪"
+        expander_label = f"Detalhes do Cliente (Geração: {formatted_generation_date}) {emoji}"
         
         with st.expander(expander_label):
             col1, col2 = st.columns(2)
@@ -86,8 +96,13 @@ def generate_detailed_view(data):
             
             url_blob_path = row['url_blob_path']
             
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3 = st.columns(3)  # Adjusting to 3 columns
+            
             with col1:
+                if st.button("Enviar por Email", key=f"email_{i}", disabled=True):
+                    st.write(f"Enviando email para: {url_blob_path}")
+            
+            with col2:
                 if st.button("Baixar Arquivo", key=f"download_{i}"): 
                     conteudo_arquivo, nome_arquivo = download_file(url_blob_path)
                     
@@ -97,14 +112,13 @@ def generate_detailed_view(data):
                         st.markdown(href, unsafe_allow_html=True)
                     else:
                         st.error("Não foi possível baixar o arquivo.")
-
-            with col2:
-                if st.button("Abrir Arquivo", key=f"open_{i}"):
-                    if is_valid_url(url_blob_path):
-                        webbrowser.open_new_tab(url_blob_path)
-                    else:
-                        st.error("URL inválida!")
-
+                
             with col3:
-                if st.button("Enviar por Email", key=f"email_{i}"):
-                    st.write(f"Enviando email para: {url_blob_path}")
+                if st.button("Abrir Detalhes", key=f"details_{i}"):
+                    show_details = True
+                else:
+                    show_details = False
+            
+            if show_details:
+                st.write("Detalhes do Pedido:")
+                st.code(row['strSummaryOrders'], language='text')  # Mostrando detalhes abaixo dos botões
