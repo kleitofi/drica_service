@@ -17,10 +17,10 @@ service_client = TableServiceClient(endpoint=account_url, credential=credential)
 table_client = service_client.get_table_client(table_name)
 
 def insert_data_into_table(json_data):
-    try:
-        entities = json.loads(json_data)
-        
-        for entity in entities:
+    entities = json.loads(json_data)
+    
+    for entity in entities:
+        try:
             table_entity = TableEntity(
                 PartitionKey=entity['cnpj'],
                 RowKey=entity['guid'],
@@ -32,17 +32,19 @@ def insert_data_into_table(json_data):
                 blob_path=entity['blob_path']
             )
             table_client.create_entity(entity=table_entity)
-        
-        print("Dados inseridos com sucesso.")
-    except Exception as ex:
-        print(f"Erro ao inserir dados: {ex}")
+            print(f"INSERT {entity['guid']}")
+        except Exception as ex:
+            print(f"INSERT Erro {entity['guid']}: {ex}")
 
+    print("INSERT END")
+    
 # Função para excluir todos os registros
 def delete_all_items():
     entities = table_client.list_entities()
     
     for entity in entities:
         table_client.delete_entity(partition_key=entity['PartitionKey'], row_key=entity['RowKey'])
+        print(f'DEL {entity['RowKey']}')
 
 def sync_data_azure_table(json_data):
     # Execute a função de exclusão

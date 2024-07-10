@@ -19,7 +19,7 @@ def fetch_data_as_json():
     conn = get_db_connection()
     query = """
     SELECT *
-    FROM vw_agend_docs_insigth
+    FROM vw_agend_docs_insigth AS x
     """
     try:
         data = pd.read_sql(query, conn)
@@ -31,6 +31,7 @@ def fetch_data_as_json():
         data['pending'] = data['pending'].astype(bool)
         
         json_data = data.to_json(orient='records', indent=4)
+        print('GET ALL')
         return json_data
     except Exception as ex:
         print(f"Erro: {ex}")
