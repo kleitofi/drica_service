@@ -108,7 +108,7 @@ def delete_all_items():
     
     for entity in entities:
         table_client.delete_entity(partition_key=entity['PartitionKey'], row_key=entity['RowKey'])
-        print(f'DEL {entity['RowKey']}')
+        #print(f'DEL {entity['RowKey']}')
 
 def sync_data_azure_table(json_data):
     # Execute a função de exclusão
