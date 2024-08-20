@@ -5,7 +5,7 @@ import uuid
 def get_db_connection():
     conn = pyodbc.connect(
         'DRIVER={ODBC Driver 17 for SQL Server};'
-        'SERVER=201.48.210.237\SQL2017STD,8701;'
+        'SERVER=177.69.189.17\SQL2017STD,8701;'
         'DATABASE=dbDricaService;'
         'UID=sa_softcom;'
         'PWD=S6t3G@;'
